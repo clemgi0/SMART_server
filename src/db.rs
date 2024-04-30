@@ -28,8 +28,8 @@ pub fn insert_protected() {
     let connection = &mut establish_connection();
     insert_into(protected)
         .default_values()
-        .execute(connection).
-        expect("Erreur insertion Protected");
+        .execute(connection)
+        .expect("Erreur insertion Protected");
 }
 
 pub fn insert_protection(id_protector: i32, id_protected: i32, name: &str) {
@@ -39,10 +39,10 @@ pub fn insert_protection(id_protector: i32, id_protected: i32, name: &str) {
         protected_id: id_protected,
         protected_name: &*name,
     };
-    insert_into(protection).
-        values(protection1).
-        execute(connection).
-        expect("Erreur insertion Protection");
+    insert_into(protection)
+        .values(protection1)
+        .execute(connection)
+        .expect("Erreur insertion Protection");
 }
 
 pub fn insert_positions_history(latitude: f32, longitude:f32, id_protected: i32) {
@@ -53,10 +53,10 @@ pub fn insert_positions_history(latitude: f32, longitude:f32, id_protected: i32)
         protected_id: id_protected,
         timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
     };
-    insert_into(positions_history).
-        values(positions_history1).
-        execute(connection).
-        expect("Erreur insertion PositionsHistory");
+    insert_into(positions_history)
+        .values(positions_history1)
+        .execute(connection)
+        .expect("Erreur insertion PositionsHistory");
 }
 
 pub fn get_positions_history(id_protected: i32) -> Vec<PositionsHistory>{
