@@ -8,10 +8,13 @@ struct Task {
     name: String,
     position: String,
 }
+#[derive(Responder)]
+#[response(status = 418, content_type = "json")]
+struct TaskResponse(Json<Task>);
 
 #[get("/todo")]
-fn todo() -> Json<Task> {
-    Json(Task { id: 25, name: String::from("Jean"), position: String::from("20 avenue Albert Einstein")})
+fn todo() -> TaskResponse {
+    TaskResponse(Json(Task { id: 25, name: String::from("Jean"), position: String::from("20 avenue Albert Einstein")}))
 }
 
 #[get("/")]
