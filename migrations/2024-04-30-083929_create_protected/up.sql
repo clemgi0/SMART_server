@@ -1,0 +1,5 @@
+-- Your SQL goes here
+
+CREATE TABLE protected (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
+);
