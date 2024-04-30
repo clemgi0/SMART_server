@@ -10,9 +10,6 @@ use crate::db::establish_connection;
 use crate::model::{Protector, ProtectorRes};
 use crate::schema::protector::dsl::protector;
 
-#[derive(Responder)]
-struct ProtectorResponse(Json<ProtectorRes>);
-
 #[get("/todo")]
 fn todo() {
     let connection = &mut establish_connection();
@@ -21,10 +18,10 @@ fn todo() {
 }
 
 #[get("/res")]
-fn res() -> ProtectorResponse {
+fn res() -> Json<ProtectorRes> {
     let connection = &mut establish_connection();
     let results = protector.select(ProtectorRes::as_select()).load(connection).expect("Erreur select protector");
-    ProtectorResponse(Json(results[0].clone()))
+    Json(results[0].clone())
 }
 
 #[get("/")]
