@@ -6,8 +6,8 @@ mod model;
 
 use diesel::{delete, insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
 use rocket::serde::{json::Json};
-use crate::db::{establish_connection, insert_positions_history, insert_protected, insert_protection, insert_protector};
-use crate::model::{ProtectedRes, Protector, ProtectorRes};
+use crate::db::{establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
+use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
@@ -60,10 +60,17 @@ fn reset() {
     insert_positions_history(44.6, 3.8, protected_list[2].id);
 }
 
+#[get("/history/<id_protected>")]
+fn history(id_protected: i32) -> Json<Vec<PositionsHistory>>{
+    let history = get_positions_history(id_protected);
+    Json(history)
+}
+
 #[launch]
 fn rocket() -> _ {
     rocket::build().mount("/", routes![index])
         .mount("/", routes![todo])
         .mount("/", routes![res])
         .mount("/", routes![reset])
+        .mount("/", routes![history])
 }

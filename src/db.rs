@@ -6,6 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use diesel::insert_into;
 use crate::model::{PositionsHistory, Protection, Protector};
 use crate::schema::positions_history::dsl::positions_history;
+use crate::schema::positions_history::protected_id;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
 use crate::schema::protector::dsl::protector;
@@ -25,7 +26,10 @@ pub fn insert_protector(protector1: Protector) {
 
 pub fn insert_protected() {
     let connection = &mut establish_connection();
-    insert_into(protected).default_values().execute(connection).expect("Erreur insertion Protected");
+    insert_into(protected)
+        .default_values()
+        .execute(connection).
+        expect("Erreur insertion Protected");
 }
 
 pub fn insert_protection(id_protector: i32, id_protected: i32, name: &str) {
@@ -35,7 +39,10 @@ pub fn insert_protection(id_protector: i32, id_protected: i32, name: &str) {
         protected_id: id_protected,
         protected_name: &*name,
     };
-    insert_into(protection).values(protection1).execute(connection).expect("Erreur insertion Protection");
+    insert_into(protection).
+        values(protection1).
+        execute(connection).
+        expect("Erreur insertion Protection");
 }
 
 pub fn insert_positions_history(latitude: f32, longitude:f32, id_protected: i32) {
@@ -46,5 +53,17 @@ pub fn insert_positions_history(latitude: f32, longitude:f32, id_protected: i32)
         protected_id: id_protected,
         timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
     };
-    insert_into(positions_history).values(positions_history1).execute(connection).expect("Erreur insertion PositionsHistory");
+    insert_into(positions_history).
+        values(positions_history1).
+        execute(connection).
+        expect("Erreur insertion PositionsHistory");
+}
+
+pub fn get_positions_history(id_protected: i32) -> Vec<PositionsHistory>{
+    let connection = &mut establish_connection();
+    positions_history
+        .select(PositionsHistory::as_select())
+        .filter(protected_id.eq(id_protected))
+        .load(connection)
+        .expect("Erreur récupération historique des positions")
 }
