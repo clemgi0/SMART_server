@@ -5,11 +5,11 @@ use crate::schema::{positions_history, protected, protector, protection};
 
 #[derive(Queryable, Selectable, Insertable, Clone, Serialize)]
 #[diesel(table_name = positions_history)]
-pub struct PositionsHistoryRes {
+pub struct PositionsHistory {
     pub latitude: f32,
     pub longitude: f32,
     pub protected_id: i32,
-    pub timestamp: i32,
+    pub timestamp: i64,
 }
 
 #[derive(Queryable, Identifiable, Selectable, Clone, Serialize)]
@@ -37,7 +37,7 @@ pub struct Protector {
 #[diesel(table_name = protection)]
 #[diesel(belongs_to(Protected))]
 #[diesel(belongs_to(Protector))]
-pub struct ProtectionRes<'a> {
+pub struct Protection<'a> {
     pub protector_id: i32,
     pub protected_id: i32,
     pub protected_name: &'a str

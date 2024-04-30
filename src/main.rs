@@ -4,10 +4,13 @@ mod model;
 
 #[macro_use] extern crate rocket;
 
-use diesel::{insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
+use diesel::{delete, insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
 use rocket::serde::{json::Json};
-use crate::db::establish_connection;
-use crate::model::{Protector, ProtectorRes};
+use crate::db::{establish_connection, insert_positions_history, insert_protected, insert_protection, insert_protector};
+use crate::model::{ProtectedRes, Protector, ProtectorRes};
+use crate::schema::positions_history::dsl::positions_history;
+use crate::schema::protected::dsl::protected;
+use crate::schema::protection::dsl::protection;
 use crate::schema::protector::dsl::protector;
 
 #[get("/todo")]
@@ -29,7 +32,38 @@ fn index() -> &'static str {
     "Hello, world!"
 }
 
+#[get("/reset")]
+fn reset() {
+    let connection = &mut establish_connection();
+    let _ = delete(protector).execute(connection);
+    let _ = delete(protected).execute(connection);
+    let _ = delete(protection).execute(connection);
+    let _ = delete(positions_history).execute(connection);
+
+    insert_protector(Protector{login: "P1".to_string(), password: "P1@mail.com".to_string()});
+    insert_protector(Protector{login: "P2".to_string(), password: "P2@mail.com".to_string()});
+    insert_protector(Protector{login: "P3".to_string(), password: "P3@mail.com".to_string()});
+
+    insert_protected();
+    insert_protected();
+    insert_protected();
+
+    let protector_list = protector.select(ProtectorRes::as_select()).load(connection).expect("Erreur récupération Protector");
+    let protected_list = protected.select(ProtectedRes::as_select()).load(connection).expect("Erreur récupération Protected");
+
+    insert_protection(protector_list[0].id, protected_list[0].id, "Papi");
+    insert_protection(protector_list[1].id, protected_list[1].id, "Mamie");
+    insert_protection(protector_list[2].id, protected_list[2].id, "Bébé");
+
+    insert_positions_history(45.2, 4.3, protected_list[0].id);
+    insert_positions_history(43.9, 5.7, protected_list[1].id);
+    insert_positions_history(44.6, 3.8, protected_list[2].id);
+}
+
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![index]).mount("/", routes![todo]).mount("/", routes![res])
+    rocket::build().mount("/", routes![index])
+        .mount("/", routes![todo])
+        .mount("/", routes![res])
+        .mount("/", routes![reset])
 }

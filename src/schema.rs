@@ -5,7 +5,7 @@ diesel::table! {
         latitude -> Float,
         longitude -> Float,
         protected_id -> Integer,
-        timestamp -> Integer,
+        timestamp -> BigInt,
     }
 }
 
