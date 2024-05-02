@@ -3,17 +3,23 @@ mod schema;
 mod model;
 
 #[macro_use] extern crate rocket;
+use rocket::data::{ByteUnit, FromData, Outcome};
 
 use diesel::{delete, insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
+use rocket::{Data, Request, Response};
+use rocket::http::Status;
+use rocket::response::content::RawJson;
+use rocket::serde::{json::Json};
+use serde::Deserialize;
+use crate::db::{check_protection, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
 use model::{SignupRequest, SignupResponse};
-use rocket::serde::json::Json;
 use argon2::Config;
 use rand::Rng;
-use crate::db::{establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
 use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
+use crate::schema::protection::protected_id;
 use crate::schema::protector::dsl::protector;
 
 #[post("/signup", data = "<signup_request>")]
@@ -91,6 +97,39 @@ fn history(id_protected: i32) -> Json<Vec<PositionsHistory>>{
     Json(history)
 }
 
+#[derive(Deserialize)]
+struct PostData {
+    id_protector: i32,
+    id_protected: i32,
+}
+
+#[rocket::async_trait]
+impl<'r> FromData<'r> for PostData {
+    type Error = String;
+
+    async fn from_data(req: &'r Request<'_>, data: Data<'r>) -> Outcome<'r, Self> {
+        let bytes = match data.open(ByteUnit::from(4096)).into_bytes().await {
+            Ok(bytes) => bytes,
+            Err(_) => return Outcome::Error((Status::InternalServerError, "Failed to read request body".to_string())),
+        };
+
+        match serde_json::from_slice::<PostData>(&bytes) {
+            Ok(post_data) => Outcome::Success(post_data),
+            Err(_) => Outcome::Error((Status::UnprocessableEntity, "Invalid JSON format".to_string())),
+        }
+    }
+}
+
+
+#[post("/history", data = "<post_data>")]
+fn history2(post_data: PostData) -> Result<Json<Vec<PositionsHistory>>, Json<String>> {
+    if check_protection(post_data.id_protector, post_data.id_protected) {
+        Ok(Json(get_positions_history(post_data.id_protected)))
+    } else {
+        Err(Json("Unauthorized".to_string()))
+    }
+}
+
 #[launch]
 fn rocket() -> _ {
     rocket::build().mount("/", routes![index])
@@ -99,4 +138,5 @@ fn rocket() -> _ {
         .mount("/", routes![reset])
         .mount("/", routes![history])
         .mount("/", routes![signup])
+        //.mount("/", routes![history2])
 }
