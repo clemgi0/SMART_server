@@ -13,12 +13,11 @@ use serde::Deserialize;
 use crate::db::{check_protection, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
 use model::{SignupRequest, SignupResponse};
 use argon2::Config;
-use rand::Rng;
+use rand::random;
 use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
-use crate::schema::protection::protected_id;
 use crate::schema::protector::dsl::protector;
 
 #[post("/signup", data = "<signup_request>")]
@@ -30,7 +29,7 @@ fn signup(signup_request: Json<SignupRequest>) -> Json<SignupResponse> {
         return Json(SignupResponse {success: false});
     }
 
-    let salt: [u8; 32] = rand::thread_rng().gen();
+    let salt: [u8; 32] = random();
 
     let config = Config::default();
 
@@ -41,20 +40,6 @@ fn signup(signup_request: Json<SignupRequest>) -> Json<SignupResponse> {
 
     Json(SignupResponse {success: true })
 
-}
-
-#[get("/todo")]
-fn todo() {
-    let connection = &mut establish_connection();
-    let my_protector = Protector{login: "Login".to_string(), password: "Password".to_string()};
-    insert_into(protector).values(my_protector).execute(connection).expect("Erreur insertion protector");
-}
-
-#[get("/res")]
-fn res() -> Json<ProtectorRes> {
-    let connection = &mut establish_connection();
-    let results = protector.select(ProtectorRes::as_select()).load(connection).expect("Erreur select protector");
-    Json(results[0].clone())
 }
 
 #[get("/")]
@@ -106,7 +91,7 @@ struct PostData {
 impl<'r> FromData<'r> for PostData {
     type Error = String;
 
-    async fn from_data(req: &'r Request<'_>, data: Data<'r>) -> Outcome<'r, Self> {
+    async fn from_data(_req: &'r Request<'_>, data: Data<'r>) -> Outcome<'r, Self> {
         let bytes = match data.open(ByteUnit::from(4096)).into_bytes().await {
             Ok(bytes) => bytes,
             Err(_) => return Outcome::Error((Status::InternalServerError, "Failed to read request body".to_string())),
@@ -132,8 +117,6 @@ fn history2(post_data: PostData) -> Result<Json<Vec<PositionsHistory>>, Json<Str
 #[launch]
 fn rocket() -> _ {
     rocket::build().mount("/", routes![index])
-        .mount("/", routes![todo])
-        .mount("/", routes![res])
         .mount("/", routes![reset])
         .mount("/", routes![history])
         .mount("/", routes![signup])
