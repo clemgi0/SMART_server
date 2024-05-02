@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 use serde::Serialize;
+use serde::Deserialize;
 
 use crate::schema::{positions_history, protected, protector, protection};
 
@@ -43,3 +44,14 @@ pub struct Protection<'a> {
     pub protected_name: &'a str
 }
 
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct SignupRequest {
+    pub login: String,
+    pub password: String,
+}
+
+#[derive(Serialize)]
+pub struct SignupResponse {
+    pub success: bool,
+}

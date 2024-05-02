@@ -5,13 +5,38 @@ mod model;
 #[macro_use] extern crate rocket;
 
 use diesel::{delete, insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
-use rocket::serde::{json::Json};
+use model::{SignupRequest, SignupResponse};
+use rocket::serde::json::Json;
+use argon2::Config;
+use rand::Rng;
 use crate::db::{establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
 use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
 use crate::schema::protector::dsl::protector;
+
+#[post("/signup", data = "<signup_request>")]
+fn signup(signup_request: Json<SignupRequest>) -> Json<SignupResponse> {
+    let connection = &mut establish_connection();
+    let results = protector.select(ProtectorRes::as_select()).load(connection).expect("Erreur select protector");
+
+    if results.iter().any(|protector1| protector1.login == signup_request.login) {
+        return Json(SignupResponse {success: false});
+    }
+
+    let salt: [u8; 32] = rand::thread_rng().gen();
+
+    let config = Config::default();
+
+    let hashed_password = argon2::hash_encoded(signup_request.password.as_bytes(), &salt, &config);
+
+    let my_protector = Protector{login: signup_request.login.clone(), password: hashed_password.expect("Erreur hashage password")};
+    insert_into(protector).values(my_protector).execute(connection).expect("Erreur insertion protector");
+
+    Json(SignupResponse {success: true })
+
+}
 
 #[get("/todo")]
 fn todo() {
@@ -73,4 +98,5 @@ fn rocket() -> _ {
         .mount("/", routes![res])
         .mount("/", routes![reset])
         .mount("/", routes![history])
+        .mount("/", routes![signup])
 }
