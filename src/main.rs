@@ -6,9 +6,8 @@ mod model;
 use rocket::data::{ByteUnit, FromData, Outcome};
 
 use diesel::{delete, insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
-use rocket::{Data, Request, Response};
+use rocket::{Data, Request};
 use rocket::http::Status;
-use rocket::response::content::RawJson;
 use rocket::serde::{json::Json};
 use serde::Deserialize;
 use crate::db::{check_protection, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
@@ -138,5 +137,5 @@ fn rocket() -> _ {
         .mount("/", routes![reset])
         .mount("/", routes![history])
         .mount("/", routes![signup])
-        //.mount("/", routes![history2])
+        .mount("/", routes![history2])
 }

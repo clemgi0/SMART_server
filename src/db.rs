@@ -6,10 +6,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use diesel::insert_into;
 use crate::model::{PositionsHistory, Protection, Protector};
 use crate::schema::positions_history::dsl::positions_history;
-use crate::schema::positions_history::protected_id;
+use crate::schema::positions_history::protected_id as history_protected_id;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
-use crate::schema::protection::protector_id;
+use crate::schema::protection::protector_id as protection_protector_id;
+use crate::schema::protection::protected_id as protection_protected_id;
 use crate::schema::protector::dsl::protector;
 
 pub fn establish_connection() -> SqliteConnection {
@@ -64,7 +65,7 @@ pub fn get_positions_history(id_protected: i32) -> Vec<PositionsHistory>{
     let connection = &mut establish_connection();
     positions_history
         .select(PositionsHistory::as_select())
-        .filter(protected_id.eq(id_protected))
+        .filter(history_protected_id.eq(id_protected))
         .load(connection)
         .expect("Erreur récupération historique des positions")
 }
@@ -73,7 +74,7 @@ pub fn check_protection(id_protector: i32, id_protected: i32) -> bool {
     let connection = &mut establish_connection();
     protection
         .select(Protection::as_select())
-        .filter(protected_id.eq(id_protected).and(protector_id.eq(id_protector)))
+        .filter(protection_protected_id.eq(id_protected).and(protection_protector_id.eq(id_protector)))
         .execute(connection)
         .expect("Erreur vérification protection") >= 1
 }
