@@ -70,8 +70,9 @@ pub fn get_positions_history(id_protected: i32) -> Vec<PositionsHistory>{
 pub fn check_protection(id_protector: i32, id_protected: i32) -> bool {
     let connection = &mut establish_connection();
     protection
-        .select(Protection::as_select())
         .filter(protection_protected_id.eq(id_protected).and(protection_protector_id.eq(id_protector)))
-        .execute(connection)
-        .expect("Erreur vérification protection") >= 1
+        .count()
+        .get_result::<i64>(connection)
+        .expect("Erreur vérification protection")
+        .gt(&0)
 }
