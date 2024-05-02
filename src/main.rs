@@ -75,12 +75,6 @@ fn reset() {
     insert_positions_history(44.6, 3.8, protected_list[2].id);
 }
 
-#[get("/history/<id_protected>")]
-fn history(id_protected: i32) -> Json<Vec<PositionsHistory>>{
-    let history = get_positions_history(id_protected);
-    Json(history)
-}
-
 #[derive(Deserialize)]
 struct PostData {
     id_protector: i32,
@@ -104,9 +98,8 @@ impl<'r> FromData<'r> for PostData {
     }
 }
 
-
 #[post("/history", data = "<post_data>")]
-fn history2(post_data: PostData) -> Result<Json<Vec<PositionsHistory>>, Json<String>> {
+fn history(post_data: PostData) -> Result<Json<Vec<PositionsHistory>>, Json<String>> {
     if check_protection(post_data.id_protector, post_data.id_protected) {
         Ok(Json(get_positions_history(post_data.id_protected)))
     } else {
@@ -120,5 +113,4 @@ fn rocket() -> _ {
         .mount("/", routes![reset])
         .mount("/", routes![history])
         .mount("/", routes![signup])
-        .mount("/", routes![history2])
 }
