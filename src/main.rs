@@ -6,32 +6,24 @@ mod request_data;
 
 #[macro_use] extern crate rocket;
 
-use diesel::{delete, insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
-use rocket::serde::{json::Json};
-use crate::db::{protected_exists, protection_exists, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
-use model::{SignupRequest, SignupResponse};
-use rocket::{Data, Request};
-use rocket::http::Status;
-use serde::Deserialize;
-use crate::db::{check_protection, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
-use model::{SignupRequest, SignupResponse, LoginRequest, LoginResponse};
-use rocket::serde::json::Json;
-use argon2::Config;
-use rand::random;
-use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes};
-use crate::request_data::{PositionData, ProtectionData};
-use crate::responder::CustomResponse;
-use rand::{random, Rng};
+use std::env;
 use chrono::Utc;
+use rand::random;
+use dotenvy::dotenv;
+use rocket::serde::json::Json;
+use diesel::{delete, insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
 use jsonwebtoken::{encode, EncodingKey, Algorithm, Header};
 use jsonwebtoken::errors::Error;
-use dotenvy::dotenv;
-use std::env;
-use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes, Claims};
+use argon2::Config;
+
+use crate::db::{protected_exists, protection_exists, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
+use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes, Claims, SignupRequest, SignupResponse, LoginRequest, LoginResponse};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
 use crate::schema::protector::dsl::protector;
+use crate::request_data::{PositionData, ProtectionData};
+use crate::responder::CustomResponse;
 
 pub fn create_jwt(id: i32) -> Result<String, Error> {
     let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
@@ -107,7 +99,7 @@ fn reset() {
     let _ = delete(protection).execute(connection);
     let _ = delete(positions_history).execute(connection);
 
-    let salt: [u8; 32] = rand::thread_rng().gen();
+    let salt: [u8; 32] = random();
 
     insert_protector(Protector{login: "P1".to_string(), password: "P1@mail.com".to_string(), salt: salt.to_vec()});
     insert_protector(Protector{login: "P2".to_string(), password: "P2@mail.com".to_string(), salt: salt.to_vec()});
