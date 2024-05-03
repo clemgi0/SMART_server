@@ -17,6 +17,7 @@ pub struct PositionsHistory {
 #[diesel(table_name = protected)]
 pub struct ProtectedRes {
     pub id: i32,
+    pub status: i32,
 }
 
 #[derive(Queryable, Identifiable, Selectable, Serialize)]

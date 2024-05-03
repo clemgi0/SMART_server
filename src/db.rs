@@ -3,11 +3,11 @@ use diesel::prelude::*;
 use dotenvy::dotenv;
 use std::env;
 use std::time::{SystemTime, UNIX_EPOCH};
-use diesel::{delete, insert_into};
+use diesel::{delete, insert_into, update};
 use crate::model::{PositionsHistory, ProtectedRes, Protection, Protector};
 use crate::schema::positions_history::{dsl::positions_history, protected_id as history_protected_id};
 use crate::schema::protected::dsl::protected;
-use crate::schema::protected::id;
+use crate::schema::protected::{id, status};
 use crate::schema::protection::{dsl::protection, protector_id as protection_protector_id, protected_id as protection_protected_id};
 use crate::schema::protector::dsl::protector;
 
@@ -92,4 +92,9 @@ pub fn protected_exists(id_protected: i32) -> bool {
 pub fn delete_protection(id_protector: i32, id_protected: i32) {
     let connection = &mut establish_connection();
     let _ = delete(protection.filter(protection_protector_id.eq(id_protector).and(protection_protected_id.eq(id_protected)))).execute(connection);
+}
+
+pub fn update_protected_status(id_protected: i32, new_status: i32) {
+    let connection = &mut establish_connection();
+    update(protected).set(status.eq(new_status)).filter(id.eq(id_protected)).execute(connection).expect("Erreur changement statut protected");
 }

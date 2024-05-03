@@ -23,6 +23,12 @@ pub struct NewProtectionData {
     pub name_protected: String,
 }
 
+#[derive(Deserialize)]
+pub struct ProtectedData {
+    pub id_protected: i32,
+    pub status: i32,
+}
+
 #[rocket::async_trait]
 impl<'r> FromData<'r> for ProtectionData {
     type Error = String;
@@ -69,6 +75,23 @@ impl<'r> FromData<'r> for NewProtectionData {
 
         match serde_json::from_slice::<NewProtectionData>(&bytes) {
             Ok(new_protection_data) => Outcome::Success(new_protection_data),
+            Err(_) => Outcome::Error((Status::UnprocessableEntity, "Invalid JSON format".to_string())),
+        }
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromData<'r> for ProtectedData {
+    type Error = String;
+
+    async fn from_data(_req: &'r Request<'_>, data: Data<'r>) -> Outcome<'r, Self> {
+        let bytes = match data.open(ByteUnit::from(4096)).into_bytes().await {
+            Ok(bytes) => bytes,
+            Err(_) => return Outcome::Error((Status::InternalServerError, "Failed to read request body".to_string())),
+        };
+
+        match serde_json::from_slice::<ProtectedData>(&bytes) {
+            Ok(protected_data) => Outcome::Success(protected_data),
             Err(_) => Outcome::Error((Status::UnprocessableEntity, "Invalid JSON format".to_string())),
         }
     }

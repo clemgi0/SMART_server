@@ -12,6 +12,7 @@ diesel::table! {
 diesel::table! {
     protected (id) {
         id -> Integer,
+        status -> Integer,
     }
 }
 

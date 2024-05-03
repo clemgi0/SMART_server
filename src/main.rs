@@ -16,13 +16,13 @@ use jsonwebtoken::{encode, EncodingKey, Algorithm, Header};
 use jsonwebtoken::errors::Error;
 use argon2::Config;
 
-use crate::db::{protected_exists, protection_exists, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector, delete_protection};
+use crate::db::{protected_exists, protection_exists, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector, delete_protection, update_protected_status};
 use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes, Claims, SignupRequest, SignupResponse, LoginRequest, LoginResponse};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
 use crate::schema::protector::dsl::protector;
-use crate::request_data::{NewProtectionData, PositionData, ProtectionData};
+use crate::request_data::{NewProtectionData, PositionData, ProtectedData, ProtectionData};
 use crate::responder::CustomResponse;
 
 pub fn create_jwt(id: i32) -> Result<String, Error> {
@@ -166,6 +166,17 @@ fn addprotected() -> Json<i32> {
     Json(new_protected.id)
 }
 
+#[post("/setstatus", data = "<protected_data>")]
+fn setstatus(protected_data: ProtectedData) -> Result<CustomResponse, CustomResponse> {
+    if protected_exists(protected_data.id_protected) {
+        update_protected_status(protected_data.id_protected, protected_data.status);
+        Ok(CustomResponse::OK)
+    } else {
+        Err(CustomResponse::Forbidden)
+    }
+}
+
+
 #[launch]
 fn rocket() -> _ {
     dotenv().ok();
@@ -178,4 +189,5 @@ fn rocket() -> _ {
         .mount("/", routes![addprotection])
         .mount("/", routes![deleteprotection])
         .mount("/", routes![addprotected])
+        .mount("/", routes![setstatus])
 }
