@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::schema::{positions_history, protected, protector, protection};
 
-#[derive(Queryable, Selectable, Insertable, Clone, Serialize)]
+#[derive(Queryable, Selectable, Insertable, Serialize)]
 #[diesel(table_name = positions_history)]
 pub struct PositionsHistory {
     pub latitude: f32,
@@ -13,13 +13,13 @@ pub struct PositionsHistory {
     pub timestamp: i64,
 }
 
-#[derive(Queryable, Identifiable, Selectable, Clone, Serialize)]
+#[derive(Queryable, Identifiable, Selectable, Serialize)]
 #[diesel(table_name = protected)]
 pub struct ProtectedRes {
     pub id: i32,
 }
 
-#[derive(Queryable, Identifiable, Selectable, Clone, Serialize)]
+#[derive(Queryable, Identifiable, Selectable, Serialize)]
 #[diesel(table_name = protector)]
 pub struct ProtectorRes {
     pub id: i32,
@@ -36,7 +36,7 @@ pub struct Protector {
     pub salt: Vec<u8>
 }
 
-#[derive(Queryable, Selectable, Insertable, Clone, Serialize)]
+#[derive(Queryable, Selectable, Insertable, Serialize)]
 #[diesel(table_name = protection)]
 #[diesel(belongs_to(Protected))]
 #[diesel(belongs_to(Protector))]

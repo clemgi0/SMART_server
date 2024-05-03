@@ -7,6 +7,7 @@ use diesel::insert_into;
 use crate::model::{PositionsHistory, Protection, Protector};
 use crate::schema::positions_history::{dsl::positions_history, protected_id as history_protected_id};
 use crate::schema::protected::dsl::protected;
+use crate::schema::protected::id;
 use crate::schema::protection::{dsl::protection, protector_id as protection_protector_id, protected_id as protection_protected_id};
 use crate::schema::protector::dsl::protector;
 
@@ -67,12 +68,22 @@ pub fn get_positions_history(id_protected: i32) -> Vec<PositionsHistory>{
         .expect("Erreur récupération historique des positions")
 }
 
-pub fn check_protection(id_protector: i32, id_protected: i32) -> bool {
+pub fn protection_exists(id_protector: i32, id_protected: i32) -> bool {
     let connection = &mut establish_connection();
     protection
         .filter(protection_protected_id.eq(id_protected).and(protection_protector_id.eq(id_protector)))
         .count()
         .get_result::<i64>(connection)
         .expect("Erreur vérification protection")
+        .gt(&0)
+}
+
+pub fn protected_exists(id_protected: i32) -> bool {
+    let connection = &mut establish_connection();
+    protected
+        .filter(id.eq(id_protected))
+        .count()
+        .get_result::<i64>(connection)
+        .expect("Erreur vérification protected")
         .gt(&0)
 }

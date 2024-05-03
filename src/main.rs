@@ -1,39 +1,39 @@
 mod db;
 mod schema;
 mod model;
+mod responder;
+mod request_data;
 
 #[macro_use] extern crate rocket;
-use rocket::data::{ByteUnit, FromData, Outcome};
 
-use diesel::{delete, insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
-use rocket::{Data, Request};
-use rocket::http::Status;
-use serde::Deserialize;
-use crate::db::{check_protection, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
-use model::{SignupRequest, SignupResponse, LoginRequest, LoginResponse};
-use rocket::serde::json::Json;
-use argon2::Config;
-use rand::{random, Rng};
+use std::env;
 use chrono::Utc;
+use rand::random;
+use dotenvy::dotenv;
+use rocket::serde::json::Json;
+use diesel::{delete, insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
 use jsonwebtoken::{encode, EncodingKey, Algorithm, Header};
 use jsonwebtoken::errors::Error;
-use dotenvy::dotenv;
-use std::env;
-use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes, Claims};
+use argon2::Config;
+
+use crate::db::{protected_exists, protection_exists, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
+use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes, Claims, SignupRequest, SignupResponse, LoginRequest, LoginResponse};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
 use crate::schema::protector::dsl::protector;
+use crate::request_data::{PositionData, ProtectionData};
+use crate::responder::CustomResponse;
 
 pub fn create_jwt(id: i32) -> Result<String, Error> {
     let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
 
     let expiration = Utc::now().checked_add_signed(chrono::Duration::seconds(60)).expect("Invalid timestamp").timestamp();
-    
+
     let claims = Claims {
         subject_id: id,
         exp: expiration as usize
-    }; 
+    };
 
     let header = Header::new(Algorithm::HS512);
 
@@ -99,7 +99,7 @@ fn reset() {
     let _ = delete(protection).execute(connection);
     let _ = delete(positions_history).execute(connection);
 
-    let salt: [u8; 32] = rand::thread_rng().gen();
+    let salt: [u8; 32] = random();
 
     insert_protector(Protector{login: "P1".to_string(), password: "P1@mail.com".to_string(), salt: salt.to_vec()});
     insert_protector(Protector{login: "P2".to_string(), password: "P2@mail.com".to_string(), salt: salt.to_vec()});
@@ -121,35 +121,22 @@ fn reset() {
     insert_positions_history(44.6, 3.8, protected_list[2].id);
 }
 
-#[derive(Deserialize)]
-struct PostData {
-    id_protector: i32,
-    id_protected: i32,
-}
-
-#[rocket::async_trait]
-impl<'r> FromData<'r> for PostData {
-    type Error = String;
-
-    async fn from_data(_req: &'r Request<'_>, data: Data<'r>) -> Outcome<'r, Self> {
-        let bytes = match data.open(ByteUnit::from(4096)).into_bytes().await {
-            Ok(bytes) => bytes,
-            Err(_) => return Outcome::Error((Status::InternalServerError, "Failed to read request body".to_string())),
-        };
-
-        match serde_json::from_slice::<PostData>(&bytes) {
-            Ok(post_data) => Outcome::Success(post_data),
-            Err(_) => Outcome::Error((Status::UnprocessableEntity, "Invalid JSON format".to_string())),
-        }
+#[post("/history", data = "<protection_data>")]
+fn history(protection_data: ProtectionData) -> Result<Json<Vec<PositionsHistory>>, CustomResponse> {
+    if protection_exists(protection_data.id_protector, protection_data.id_protected) {
+        Ok(Json(get_positions_history(protection_data.id_protected)))
+    } else {
+        Err(CustomResponse::Unauthorized)
     }
 }
 
-#[post("/history", data = "<post_data>")]
-fn history(post_data: PostData) -> Result<Json<Vec<PositionsHistory>>, Json<String>> {
-    if check_protection(post_data.id_protector, post_data.id_protected) {
-        Ok(Json(get_positions_history(post_data.id_protected)))
+#[post("/addposition", data = "<position_data>")]
+fn addposition(position_data: PositionData) -> Result<CustomResponse, CustomResponse> {
+    if protected_exists(position_data.id_protected) && position_data.latitude.abs() <= 90.0 && position_data.longitude.abs() <= 90.0{
+        insert_positions_history(position_data.latitude, position_data.longitude, position_data.id_protected);
+        Ok(CustomResponse::OK)
     } else {
-        Err(Json("Unauthorized".to_string()))
+        Err(CustomResponse::Forbidden)
     }
 }
 
@@ -161,4 +148,5 @@ fn rocket() -> _ {
         .mount("/", routes![history])
         .mount("/", routes![signup])
         .mount("/", routes![login])
+        .mount("/", routes![addposition])
 }
