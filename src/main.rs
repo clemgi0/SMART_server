@@ -3,6 +3,7 @@ mod schema;
 mod model;
 mod responder;
 mod request_data;
+mod mail;
 
 #[macro_use] extern crate rocket;
 
