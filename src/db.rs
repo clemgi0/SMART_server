@@ -4,11 +4,11 @@ use dotenvy::dotenv;
 use std::env;
 use std::time::{SystemTime, UNIX_EPOCH};
 use diesel::{delete, insert_into, update};
-use crate::model::{PositionsHistory, Protected, Protection, Protector, ProtectorRes};
-use crate::schema::positions_history::{dsl::positions_history, protected_id as hst_protected_id};
-use crate::schema::protected::{dsl::protected, id as pd_id, status};
-use crate::schema::protection::{dsl::protection, protector_id as pn_protector_id, protected_id as pn_protected_id};
-use crate::schema::protector::{dsl::protector, id as pr_id};
+use crate::model::{Watcher, WatcherRes, Tracker, Monitoring, Position};
+use crate::schema::position::{dsl::position, tracker_id as hst_tracker_id};
+use crate::schema::tracker::{dsl::tracker, id as pd_id, status};
+use crate::schema::monitoring::{dsl::monitoring, watcher_id as pn_watcher_id, tracker_id as pn_tracker_id};
+use crate::schema::watcher::{dsl::watcher, id as pr_id};
 
 pub fn establish_connection() -> SqliteConnection {
     dotenv().ok();
@@ -18,100 +18,100 @@ pub fn establish_connection() -> SqliteConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-pub fn insert_protector(protector1: Protector) {
+pub fn insert_watcher(watcher1: Watcher) {
     let connection = &mut establish_connection();
-    insert_into(protector).values(protector1).execute(connection).expect("Erreur insertion Protector");
+    insert_into(watcher).values(watcher1).execute(connection).expect("Erreur insertion Watcher");
 }
 
-pub fn insert_protected() -> Protected {
+pub fn insert_tracker() -> Tracker {
     let connection = &mut establish_connection();
-    insert_into(protected)
+    insert_into(tracker)
         .default_values()
-        .returning(Protected::as_select())
+        .returning(Tracker::as_select())
         .get_result(connection)
-        .expect("Erreur insertion Protected")
+        .expect("Erreur insertion Tracker")
 }
 
-pub fn insert_protection(id_protector: i32, id_protected: i32, name: String) {
+pub fn insert_monitoring(id_watcher: i32, id_tracker: i32, name: String) {
     let connection = &mut establish_connection();
-    let protection1 = Protection{
-        protector_id: id_protector,
-        protected_id: id_protected,
-        protected_name: name,
+    let monitoring1 = Monitoring{
+        watcher_id: id_watcher,
+        tracker_id: id_tracker,
+        tracker_name: name,
     };
-    insert_into(protection)
-        .values(protection1)
+    insert_into(monitoring)
+        .values(monitoring1)
         .execute(connection)
-        .expect("Erreur insertion Protection");
+        .expect("Erreur insertion Monitoring");
 }
 
-pub fn insert_positions_history(latitude: f32, longitude:f32, id_protected: i32) {
+pub fn insert_position(latitude: f32, longitude:f32, id_tracker: i32) {
     let connection = &mut establish_connection();
-    let positions_history1 = PositionsHistory{
+    let position1 = Position {
         latitude,
         longitude,
-        protected_id: id_protected,
+        tracker_id: id_tracker,
         timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64,
     };
-    insert_into(positions_history)
-        .values(positions_history1)
+    insert_into(position)
+        .values(position1)
         .execute(connection)
         .expect("Erreur insertion PositionsHistory");
 }
 
-pub fn get_positions_history(id_protected: i32) -> Vec<PositionsHistory>{
+pub fn get_position(id_tracker: i32) -> Vec<Position>{
     let connection = &mut establish_connection();
-    positions_history
-        .select(PositionsHistory::as_select())
-        .filter(hst_protected_id.eq(id_protected))
+    position
+        .select(Position::as_select())
+        .filter(hst_tracker_id.eq(id_tracker))
         .load(connection)
         .expect("Erreur récupération historique des positions")
 }
 
-pub fn protection_exists(id_protector: i32, id_protected: i32) -> bool {
+pub fn monitoring_exists(id_watcher: i32, id_tracker: i32) -> bool {
     let connection = &mut establish_connection();
-    protection
-        .filter(pn_protected_id.eq(id_protected).and(pn_protector_id.eq(id_protector)))
+    monitoring
+        .filter(pn_tracker_id.eq(id_tracker).and(pn_watcher_id.eq(id_watcher)))
         .count()
         .get_result::<i64>(connection)
-        .expect("Erreur vérification protection")
+        .expect("Erreur vérification monitoring")
         .gt(&0)
 }
 
-pub fn protected_exists(id_protected: i32) -> bool {
+pub fn tracker_exists(id_tracker: i32) -> bool {
     let connection = &mut establish_connection();
-    protected
-        .filter(pd_id.eq(id_protected))
+    tracker
+        .filter(pd_id.eq(id_tracker))
         .count()
         .get_result::<i64>(connection)
-        .expect("Erreur vérification protected")
+        .expect("Erreur vérification tracker")
         .gt(&0)
 }
 
-pub fn delete_protection(id_protector: i32, id_protected: i32) {
+pub fn delete_monitoring(id_watcher: i32, id_tracker: i32) {
     let connection = &mut establish_connection();
-    let _ = delete(protection.filter(pn_protector_id.eq(id_protector).and(pn_protected_id.eq(id_protected)))).execute(connection);
+    let _ = delete(monitoring.filter(pn_watcher_id.eq(id_watcher).and(pn_tracker_id.eq(id_tracker)))).execute(connection);
 }
 
-pub fn update_protected_status(id_protected: i32, new_status: i32) {
+pub fn update_tracker_status(id_tracker: i32, new_status: i32) {
     let connection = &mut establish_connection();
-    update(protected).set(status.eq(new_status)).filter(pd_id.eq(id_protected)).execute(connection).expect("Erreur changement statut protected");
+    update(tracker).set(status.eq(new_status)).filter(pd_id.eq(id_tracker)).execute(connection).expect("Erreur changement statut tracker");
 }
 
-pub fn get_protector(id_protector: i32) -> ProtectorRes {
+pub fn get_watcher(id_watcher: i32) -> WatcherRes {
     let connection = &mut establish_connection();
-    protector
-        .select(ProtectorRes::as_select())
-        .filter(pr_id.eq(id_protector))
-        .get_result::<ProtectorRes>(connection)
-        .expect("Erreur récupération protector")
+    watcher
+        .select(WatcherRes::as_select())
+        .filter(pr_id.eq(id_watcher))
+        .get_result::<WatcherRes>(connection)
+        .expect("Erreur récupération watcher")
 }
 
-pub fn get_protections(id_protected: i32) -> Vec<Protection>{
+pub fn get_monitorings(id_tracker: i32) -> Vec<Monitoring>{
     let connection = &mut establish_connection();
-    protection
-        .select(Protection::as_select())
-        .filter(pn_protected_id.eq(id_protected))
+    monitoring
+        .select(Monitoring::as_select())
+        .filter(pn_tracker_id.eq(id_tracker))
         .load(connection)
-        .expect("Erreur récupération protections")
+        .expect("Erreur récupération monitorings")
 }

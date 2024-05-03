@@ -2,62 +2,63 @@ use diesel::prelude::*;
 use serde::Serialize;
 use serde::Deserialize;
 
-use crate::schema::{positions_history, protected, protector, protection};
+use crate::schema::{watcher, tracker, monitoring, position};
 
 #[derive(Queryable, Selectable, Insertable, Serialize)]
-#[diesel(table_name = positions_history)]
-pub struct PositionsHistory {
+#[diesel(table_name = position)]
+pub struct Position {
     pub latitude: f32,
     pub longitude: f32,
-    pub protected_id: i32,
+    pub tracker_id: i32,
     pub timestamp: i64,
 }
 
 #[derive(Deserialize)]
 pub struct PositionRequest {
-    pub id_protected: i32,
+    pub tracker_id: i32,
     pub latitude: f32,
     pub longitude: f32,
 }
 
 #[derive(Queryable, Identifiable, Selectable, Serialize, Deserialize)]
-#[diesel(table_name = protected)]
-pub struct Protected {
+#[diesel(table_name = tracker)]
+pub struct Tracker {
     pub id: i32,
     pub status: i32,
 }
 
+#[derive(Insertable)]
+#[diesel(table_name = watcher)]
+pub struct Watcher {
+    pub login: String,
+    pub password: String,
+    pub salt: Vec<u8>
+}
+
 #[derive(Queryable, Identifiable, Selectable, Serialize)]
-#[diesel(table_name = protector)]
-pub struct ProtectorRes {
+#[diesel(table_name = watcher)]
+pub struct WatcherRes {
     pub id: i32,
     pub login: String,
     pub password: String,
     pub salt: Vec<u8>
 }
 
-#[derive(Insertable)]
-#[diesel(table_name = protector)]
-pub struct Protector {
-    pub login: String,
-    pub password: String,
-    pub salt: Vec<u8>
-}
 
 #[derive(Queryable, Selectable, Insertable, Serialize, Deserialize)]
-#[diesel(table_name = protection)]
-#[diesel(belongs_to(Protected))]
-#[diesel(belongs_to(Protector))]
-pub struct Protection {
-    pub protector_id: i32,
-    pub protected_id: i32,
-    pub protected_name: String
+#[diesel(table_name = monitoring)]
+#[diesel(belongs_to(Watcher))]
+#[diesel(belongs_to(Tracker))]
+pub struct Monitoring {
+    pub watcher_id: i32,
+    pub tracker_id: i32,
+    pub tracker_name: String
 }
 
 #[derive(Deserialize)]
-pub struct ProtectionRequest {
-    pub id_protector: i32,
-    pub id_protected: i32,
+pub struct MonitoringRequest {
+    pub watcher_id: i32,
+    pub tracker_id: i32,
 }
 
 #[derive(Deserialize)]
