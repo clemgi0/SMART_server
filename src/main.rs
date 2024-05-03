@@ -160,6 +160,12 @@ fn deleteprotection(protection_data: ProtectionData) -> Result<CustomResponse, C
     }
 }
 
+#[post("/addprotected")]
+fn addprotected() -> Json<i32> {
+    let new_protected = insert_protected();
+    Json(new_protected.id)
+}
+
 #[launch]
 fn rocket() -> _ {
     dotenv().ok();
@@ -171,4 +177,5 @@ fn rocket() -> _ {
         .mount("/", routes![addposition])
         .mount("/", routes![addprotection])
         .mount("/", routes![deleteprotection])
+        .mount("/", routes![addprotected])
 }
