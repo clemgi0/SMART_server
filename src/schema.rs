@@ -1,30 +1,33 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    positions_history (protected_id, timestamp) {
+    monitoring (watcher_id, tracker_id) {
+        watcher_id -> Integer,
+        tracker_id -> Integer,
+        tracker_name -> Text,
+    }
+}
+
+diesel::table! {
+    position (tracker_id, timestamp) {
         latitude -> Float,
         longitude -> Float,
-        protected_id -> Integer,
+        tracker_id -> Integer,
         timestamp -> BigInt,
     }
 }
 
 diesel::table! {
-    protected (id) {
+    tracker (id) {
         id -> Integer,
+        status -> Integer,
+        latitude -> Float,
+        longitude -> Float,
     }
 }
 
 diesel::table! {
-    protection (protected_id, protector_id) {
-        protected_id -> Integer,
-        protector_id -> Integer,
-        protected_name -> Text,
-    }
-}
-
-diesel::table! {
-    protector (id) {
+    watcher (id) {
         id -> Integer,
         login -> Text,
         password -> Text,
@@ -32,13 +35,13 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(positions_history -> protected (protected_id));
-diesel::joinable!(protection -> protected (protected_id));
-diesel::joinable!(protection -> protector (protector_id));
+diesel::joinable!(monitoring -> tracker (tracker_id));
+diesel::joinable!(monitoring -> watcher (watcher_id));
+diesel::joinable!(position -> tracker (tracker_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    positions_history,
-    protected,
-    protection,
-    protector,
+    monitoring,
+    position,
+    tracker,
+    watcher,
 );
