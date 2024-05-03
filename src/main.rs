@@ -14,11 +14,31 @@ use model::{SignupRequest, SignupResponse, LoginRequest, LoginResponse};
 use rocket::serde::json::Json;
 use argon2::Config;
 use rand::{random, Rng};
-use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes};
+use chrono::Utc;
+use jsonwebtoken::{encode, EncodingKey, Algorithm, Header};
+use jsonwebtoken::errors::Error;
+use dotenvy::dotenv;
+use std::env;
+use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes, Claims};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
 use crate::schema::protector::dsl::protector;
+
+pub fn create_jwt(id: i32) -> Result<String, Error> {
+    let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
+
+    let expiration = Utc::now().checked_add_signed(chrono::Duration::seconds(60)).expect("Invalid timestamp").timestamp();
+    
+    let claims = Claims {
+        subject_id: id,
+        exp: expiration as usize
+    }; 
+
+    let header = Header::new(Algorithm::HS512);
+
+    encode(&header, &claims, &EncodingKey::from_secret(secret.as_bytes()))
+}
 
 #[post("/signup", data = "<signup_request>")]
 fn signup(signup_request: Json<SignupRequest>) -> Json<SignupResponse> {
@@ -54,13 +74,14 @@ fn login(login_request: Json<LoginRequest>) -> Json<LoginResponse> {
             let config = Config::default();
             let hashed_password = argon2::hash_encoded(login_request.password.as_bytes(), &salt, &config).expect("Couldn't hash login password");
             if hashed_password == protector1.password {
-                Json(LoginResponse{success: true })
+                let jwt = create_jwt(protector1.id).expect("Couldn't create jwt token");
+                Json(LoginResponse{access_token: jwt })
             } else {
-                Json(LoginResponse{success: false })
+                Json(LoginResponse{access_token: "".to_string() })
             }
         },
         None => {
-            Json(LoginResponse{success: false })
+            Json(LoginResponse{access_token: "".to_string() })
         }
     }
 }
@@ -134,6 +155,7 @@ fn history(post_data: PostData) -> Result<Json<Vec<PositionsHistory>>, Json<Stri
 
 #[launch]
 fn rocket() -> _ {
+    dotenv().ok();
     rocket::build().mount("/", routes![index])
         .mount("/", routes![reset])
         .mount("/", routes![history])

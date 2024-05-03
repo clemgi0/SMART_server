@@ -67,5 +67,16 @@ pub struct LoginRequest {
 
 #[derive(Serialize)]
 pub struct LoginResponse {
-    pub success: bool,
+    pub access_token: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Claims {
+    pub subject_id: i32,
+    pub exp: usize
+}
+
+#[derive(Debug)]
+pub struct JWT {
+    pub claims: Claims
 }
