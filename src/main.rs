@@ -154,9 +154,9 @@ fn addprotection(new_protection_data: NewProtectionData) -> Result<CustomRespons
 fn deleteprotection(protection_data: ProtectionData) -> Result<CustomResponse, CustomResponse> {
     if protection_exists(protection_data.id_protector, protection_data.id_protected) {
         delete_protection(protection_data.id_protector, protection_data.id_protected);
-        return Ok(CustomResponse::OK)
+        Ok(CustomResponse::OK)
     } else {
-        return Err(CustomResponse::Unauthorized)
+        Err(CustomResponse::Unauthorized)
     }
 }
 
