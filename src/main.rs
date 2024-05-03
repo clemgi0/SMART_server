@@ -2,7 +2,6 @@ mod db;
 mod schema;
 mod model;
 mod responder;
-mod request_data;
 mod mail;
 
 #[macro_use] extern crate rocket;
@@ -19,12 +18,11 @@ use argon2::Config;
 
 use crate::db::{protected_exists, protection_exists, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector, delete_protection, update_protected_status, get_protector, get_protections};
 use crate::mail::send_mail;
-use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes, Claims, SignupRequest, SignupResponse, LoginRequest, LoginResponse};
+use crate::model::{PositionsHistory, Protected, Protector, ProtectorRes, Claims, SignupRequest, SignupResponse, LoginRequest, LoginResponse, ProtectionRequest, PositionRequest, Protection};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
 use crate::schema::protection::dsl::protection;
 use crate::schema::protector::dsl::protector;
-use crate::request_data::{NewProtectionData, PositionData, ProtectedData, ProtectionData};
 use crate::responder::CustomResponse;
 
 pub fn create_jwt(id: i32) -> Result<String, Error> {
@@ -112,7 +110,7 @@ fn reset() {
     insert_protected();
 
     let protector_list = protector.select(ProtectorRes::as_select()).load(connection).expect("Erreur récupération Protector");
-    let protected_list = protected.select(ProtectedRes::as_select()).load(connection).expect("Erreur récupération Protected");
+    let protected_list = protected.select(Protected::as_select()).load(connection).expect("Erreur récupération Protected");
 
     insert_protection(protector_list[0].id, protected_list[0].id, "Papi".to_string());
     insert_protection(protector_list[1].id, protected_list[1].id, "Mamie".to_string());
@@ -123,42 +121,42 @@ fn reset() {
     insert_positions_history(44.6, 3.8, protected_list[2].id);
 }
 
-#[post("/history", data = "<protection_data>")]
-fn history(protection_data: ProtectionData) -> Result<Json<Vec<PositionsHistory>>, CustomResponse> {
-    if protection_exists(protection_data.id_protector, protection_data.id_protected) {
-        Ok(Json(get_positions_history(protection_data.id_protected)))
+#[post("/history", data = "<data>")]
+fn history(data: Json<ProtectionRequest>) -> Result<Json<Vec<PositionsHistory>>, CustomResponse> {
+    if protection_exists(data.id_protector, data.id_protected) {
+        Ok(Json(get_positions_history(data.id_protected)))
     } else {
         Err(CustomResponse::Unauthorized)
     }
 }
 
-#[post("/addposition", data = "<position_data>")]
-fn addposition(position_data: PositionData) -> Result<CustomResponse, CustomResponse> {
-    if protected_exists(position_data.id_protected) && position_data.latitude.abs() <= 90.0 && position_data.longitude.abs() <= 90.0{
-        insert_positions_history(position_data.latitude, position_data.longitude, position_data.id_protected);
-        Ok(CustomResponse::OK)
+#[post("/addposition", data = "<data>")]
+fn addposition(data: Json<PositionRequest>) -> CustomResponse {
+    if protected_exists(data.id_protected) && data.latitude.abs() <= 90.0 && data.longitude.abs() <= 90.0{
+        insert_positions_history(data.latitude, data.longitude, data.id_protected);
+        CustomResponse::OK
     } else {
-        Err(CustomResponse::Forbidden)
+        CustomResponse::Forbidden
     }
 }
 
-#[post("/addprotection", data = "<new_protection_data>")]
-fn addprotection(new_protection_data: NewProtectionData) -> Result<CustomResponse, CustomResponse> {
-    if protected_exists(new_protection_data.id_protected) && !protection_exists(new_protection_data.id_protector, new_protection_data.id_protected) {
-        insert_protection(new_protection_data.id_protector, new_protection_data.id_protected, new_protection_data.name_protected);
-        Ok(CustomResponse::OK)
+#[post("/addprotection", data = "<data>")]
+fn addprotection(data: Json<Protection>) -> CustomResponse {
+    if protected_exists(data.protected_id) && !protection_exists(data.protector_id, data.protected_id) {
+        insert_protection(data.protector_id, data.protected_id, data.protected_name.clone());
+        CustomResponse::OK
     } else {
-        Err(CustomResponse::Forbidden)
+        CustomResponse::Forbidden
     }
 }
 
-#[post("/deleteprotection", data= "<protection_data>")]
-fn deleteprotection(protection_data: ProtectionData) -> Result<CustomResponse, CustomResponse> {
-    if protection_exists(protection_data.id_protector, protection_data.id_protected) {
-        delete_protection(protection_data.id_protector, protection_data.id_protected);
-        Ok(CustomResponse::OK)
+#[post("/deleteprotection", data= "<data>")]
+fn deleteprotection(data: Json<ProtectionRequest>) -> CustomResponse {
+    if protection_exists(data.id_protector, data.id_protected) {
+        delete_protection(data.id_protector, data.id_protected);
+        CustomResponse::OK
     } else {
-        Err(CustomResponse::Unauthorized)
+        CustomResponse::Unauthorized
     }
 }
 
@@ -168,17 +166,17 @@ fn addprotected() -> Json<i32> {
     Json(new_protected.id)
 }
 
-#[post("/setstatus", data = "<protected_data>")]
-async fn setstatus(protected_data: ProtectedData) -> Result<CustomResponse, CustomResponse> {
-    if protected_exists(protected_data.id_protected) {
-        update_protected_status(protected_data.id_protected, protected_data.status);
+#[post("/setstatus", data = "<data>")]
+async fn setstatus(data: Json<Protected>) -> CustomResponse {
+    if protected_exists(data.id) {
+        update_protected_status(data.id, data.status);
 
-        let protections = get_protections(protected_data.id_protected);
+        let protections = get_protections(data.id);
         for prtn in protections {
             let prtr = get_protector(prtn.protector_id);
 
             let name = prtn.protected_name;
-            let message = if protected_data.status == 0 {
+            let message = if data.status == 0 {
                 format!("{name} est revenu dans la zone sûre.")
             } else {
                 format!("{name} a quitté la zone sûre.")
@@ -186,9 +184,9 @@ async fn setstatus(protected_data: ProtectedData) -> Result<CustomResponse, Cust
             send_mail(prtr.login, message).await.expect("Erreur envoi du mail");
         }
 
-        Ok(CustomResponse::OK)
+        CustomResponse::OK
     } else {
-        Err(CustomResponse::Forbidden)
+        CustomResponse::Forbidden
     }
 }
 

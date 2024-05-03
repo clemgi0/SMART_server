@@ -13,9 +13,16 @@ pub struct PositionsHistory {
     pub timestamp: i64,
 }
 
-#[derive(Queryable, Identifiable, Selectable, Serialize)]
+#[derive(Deserialize)]
+pub struct PositionRequest {
+    pub id_protected: i32,
+    pub latitude: f32,
+    pub longitude: f32,
+}
+
+#[derive(Queryable, Identifiable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = protected)]
-pub struct ProtectedRes {
+pub struct Protected {
     pub id: i32,
     pub status: i32,
 }
@@ -37,7 +44,7 @@ pub struct Protector {
     pub salt: Vec<u8>
 }
 
-#[derive(Queryable, Selectable, Insertable, Serialize)]
+#[derive(Queryable, Selectable, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = protection)]
 #[diesel(belongs_to(Protected))]
 #[diesel(belongs_to(Protector))]
@@ -45,6 +52,12 @@ pub struct Protection {
     pub protector_id: i32,
     pub protected_id: i32,
     pub protected_name: String
+}
+
+#[derive(Deserialize)]
+pub struct ProtectionRequest {
+    pub id_protector: i32,
+    pub id_protected: i32,
 }
 
 #[derive(Deserialize)]

@@ -4,7 +4,7 @@ use dotenvy::dotenv;
 use std::env;
 use std::time::{SystemTime, UNIX_EPOCH};
 use diesel::{delete, insert_into, update};
-use crate::model::{PositionsHistory, ProtectedRes, Protection, Protector, ProtectorRes};
+use crate::model::{PositionsHistory, Protected, Protection, Protector, ProtectorRes};
 use crate::schema::positions_history::{dsl::positions_history, protected_id as hst_protected_id};
 use crate::schema::protected::{dsl::protected, id as pd_id, status};
 use crate::schema::protection::{dsl::protection, protector_id as pn_protector_id, protected_id as pn_protected_id};
@@ -23,11 +23,11 @@ pub fn insert_protector(protector1: Protector) {
     insert_into(protector).values(protector1).execute(connection).expect("Erreur insertion Protector");
 }
 
-pub fn insert_protected() -> ProtectedRes {
+pub fn insert_protected() -> Protected {
     let connection = &mut establish_connection();
     insert_into(protected)
         .default_values()
-        .returning(ProtectedRes::as_select())
+        .returning(Protected::as_select())
         .get_result(connection)
         .expect("Erreur insertion Protected")
 }
