@@ -25,6 +25,7 @@ pub struct ProtectorRes {
     pub id: i32,
     pub login: String,
     pub password: String,
+    pub salt: Vec<u8>
 }
 
 #[derive(Insertable)]
@@ -32,6 +33,7 @@ pub struct ProtectorRes {
 pub struct Protector {
     pub login: String,
     pub password: String,
+    pub salt: Vec<u8>
 }
 
 #[derive(Queryable, Selectable, Insertable, Serialize)]
@@ -54,4 +56,27 @@ pub struct SignupRequest {
 #[derive(Serialize)]
 pub struct SignupResponse {
     pub success: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct LoginRequest {
+    pub login: String,
+    pub password: String,
+}
+
+#[derive(Serialize)]
+pub struct LoginResponse {
+    pub access_token: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Claims {
+    pub subject_id: i32,
+    pub exp: usize
+}
+
+#[derive(Debug)]
+pub struct JWT {
+    pub claims: Claims
 }

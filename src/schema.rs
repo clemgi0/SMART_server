@@ -28,6 +28,7 @@ diesel::table! {
         id -> Integer,
         login -> Text,
         password -> Text,
+        salt -> Binary,
     }
 }
 
