@@ -16,7 +16,7 @@ use jsonwebtoken::{encode, EncodingKey, Algorithm, Header};
 use jsonwebtoken::errors::Error;
 use argon2::Config;
 
-use crate::db::{protected_exists, protection_exists, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector};
+use crate::db::{protected_exists, protection_exists, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector, delete_protection};
 use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes, Claims, SignupRequest, SignupResponse, LoginRequest, LoginResponse};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
@@ -140,6 +140,16 @@ fn addposition(position_data: PositionData) -> Result<CustomResponse, CustomResp
     }
 }
 
+#[post("/deleteprotection", data= "<protection_data>")]
+fn deleteprotection(protection_data: ProtectionData) -> Result<CustomResponse, CustomResponse> {
+    if protection_exists(protection_data.id_protector, protection_data.id_protected) {
+        delete_protection(protection_data.id_protector, protection_data.id_protected);
+        return Ok(CustomResponse::OK)
+    } else {
+        return Err(CustomResponse::Unauthorized)
+    }
+}
+
 #[launch]
 fn rocket() -> _ {
     dotenv().ok();
@@ -149,4 +159,5 @@ fn rocket() -> _ {
         .mount("/", routes![signup])
         .mount("/", routes![login])
         .mount("/", routes![addposition])
+        .mount("/", routes![deleteprotection])
 }
