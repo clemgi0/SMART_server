@@ -41,10 +41,10 @@ pub struct Protector {
 #[diesel(table_name = protection)]
 #[diesel(belongs_to(Protected))]
 #[diesel(belongs_to(Protector))]
-pub struct Protection<'a> {
+pub struct Protection {
     pub protector_id: i32,
     pub protected_id: i32,
-    pub protected_name: &'a str
+    pub protected_name: String
 }
 
 #[derive(Deserialize)]

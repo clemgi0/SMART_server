@@ -17,7 +17,8 @@ use jsonwebtoken::{encode, EncodingKey, Algorithm, Header};
 use jsonwebtoken::errors::Error;
 use argon2::Config;
 
-use crate::db::{protected_exists, protection_exists, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector, delete_protection, update_protected_status};
+use crate::db::{protected_exists, protection_exists, establish_connection, get_positions_history, insert_positions_history, insert_protected, insert_protection, insert_protector, delete_protection, update_protected_status, get_protector, get_protections};
+use crate::mail::send_mail;
 use crate::model::{PositionsHistory, ProtectedRes, Protector, ProtectorRes, Claims, SignupRequest, SignupResponse, LoginRequest, LoginResponse};
 use crate::schema::positions_history::dsl::positions_history;
 use crate::schema::protected::dsl::protected;
@@ -113,9 +114,9 @@ fn reset() {
     let protector_list = protector.select(ProtectorRes::as_select()).load(connection).expect("Erreur récupération Protector");
     let protected_list = protected.select(ProtectedRes::as_select()).load(connection).expect("Erreur récupération Protected");
 
-    insert_protection(protector_list[0].id, protected_list[0].id, "Papi");
-    insert_protection(protector_list[1].id, protected_list[1].id, "Mamie");
-    insert_protection(protector_list[2].id, protected_list[2].id, "Bébé");
+    insert_protection(protector_list[0].id, protected_list[0].id, "Papi".to_string());
+    insert_protection(protector_list[1].id, protected_list[1].id, "Mamie".to_string());
+    insert_protection(protector_list[2].id, protected_list[2].id, "Bébé".to_string());
 
     insert_positions_history(45.2, 4.3, protected_list[0].id);
     insert_positions_history(43.9, 5.7, protected_list[1].id);
@@ -144,7 +145,7 @@ fn addposition(position_data: PositionData) -> Result<CustomResponse, CustomResp
 #[post("/addprotection", data = "<new_protection_data>")]
 fn addprotection(new_protection_data: NewProtectionData) -> Result<CustomResponse, CustomResponse> {
     if protected_exists(new_protection_data.id_protected) && !protection_exists(new_protection_data.id_protector, new_protection_data.id_protected) {
-        insert_protection(new_protection_data.id_protector, new_protection_data.id_protected, new_protection_data.name_protected.as_str());
+        insert_protection(new_protection_data.id_protector, new_protection_data.id_protected, new_protection_data.name_protected);
         Ok(CustomResponse::OK)
     } else {
         Err(CustomResponse::Forbidden)
@@ -168,9 +169,23 @@ fn addprotected() -> Json<i32> {
 }
 
 #[post("/setstatus", data = "<protected_data>")]
-fn setstatus(protected_data: ProtectedData) -> Result<CustomResponse, CustomResponse> {
+async fn setstatus(protected_data: ProtectedData) -> Result<CustomResponse, CustomResponse> {
     if protected_exists(protected_data.id_protected) {
         update_protected_status(protected_data.id_protected, protected_data.status);
+
+        let protections = get_protections(protected_data.id_protected);
+        for prtn in protections {
+            let prtr = get_protector(prtn.protector_id);
+
+            let name = prtn.protected_name;
+            let message = if protected_data.status == 0 {
+                format!("{name} est revenu dans la zone sûre.")
+            } else {
+                format!("{name} a quitté la zone sûre.")
+            };
+            send_mail(prtr.login, message).await.expect("Erreur envoi du mail");
+        }
+
         Ok(CustomResponse::OK)
     } else {
         Err(CustomResponse::Forbidden)
