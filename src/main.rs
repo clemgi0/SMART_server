@@ -11,18 +11,15 @@ use chrono::Utc;
 use rand::random;
 use dotenvy::dotenv;
 use rocket::serde::json::Json;
-use diesel::{delete, insert_into, QueryDsl, RunQueryDsl, SelectableHelper};
+use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use jsonwebtoken::{encode, EncodingKey, Algorithm, Header};
 use jsonwebtoken::errors::Error;
 use argon2::Config;
 
-use crate::db::{tracker_exists, monitoring_exists, establish_connection, get_position, insert_position, insert_tracker, insert_monitoring, insert_watcher, delete_monitoring, update_tracker_status, get_watcher, get_monitorings};
+use crate::db::*;
+use crate::model::*;
 use crate::mail::send_mail;
-use crate::model::{Watcher, WatcherRes, Tracker, Monitoring, MonitoringRequest, Position, PositionRequest, Claims, SignupRequest, SignupResponse, LoginRequest, LoginResponse};
-use crate::schema::position::dsl::position;
 use crate::schema::watcher::dsl::watcher;
-use crate::schema::tracker::dsl::tracker;
-use crate::schema::monitoring::dsl::monitoring;
 use crate::responder::CustomResponse;
 
 pub fn create_jwt(id: i32) -> Result<String, Error> {
@@ -42,22 +39,15 @@ pub fn create_jwt(id: i32) -> Result<String, Error> {
 
 #[post("/signup", data = "<signup_request>")]
 fn signup(signup_request: Json<SignupRequest>) -> Json<SignupResponse> {
-    let connection = &mut establish_connection();
-    let results = watcher.select(WatcherRes::as_select()).load(connection).expect("Erreur select watcher");
-
-    if results.iter().any(|watcher1| watcher1.login == signup_request.login) {
+    if watcher_exists(signup_request.login.clone()) {
         return Json(SignupResponse {success: false});
     }
 
     let salt: [u8; 32] = random();
-
     let config = Config::default();
-
     let hashed_password = argon2::hash_encoded(signup_request.password.as_bytes(), &salt, &config);
 
-    let my_watcher = Watcher{login: signup_request.login.clone(), password: hashed_password.expect("Erreur hashage password"), salt: salt.to_vec()};
-    insert_into(watcher).values(my_watcher).execute(connection).expect("Erreur insertion watcher");
-
+    insert_watcher(WatcherInsert {login: signup_request.login.clone(), password: hashed_password.expect("Erreur hashage password"), salt: salt.to_vec()});
     Json(SignupResponse {success: true })
 
 }
@@ -66,7 +56,7 @@ fn signup(signup_request: Json<SignupRequest>) -> Json<SignupResponse> {
 fn login(login_request: Json<LoginRequest>) -> Json<LoginResponse> {
 
     let connection = &mut establish_connection();
-    let results = watcher.select(WatcherRes::as_select()).load(connection).expect("Erreur select watcher");
+    let results = watcher.select(Watcher::as_select()).load(connection).expect("Erreur select watcher");
     let watcher1_opt = results.iter().find(|watcher1| watcher1.login == login_request.login.clone());
     match watcher1_opt {
         Some(watcher1) => {
@@ -89,36 +79,6 @@ fn login(login_request: Json<LoginRequest>) -> Json<LoginResponse> {
 #[get("/")]
 fn index() -> &'static str {
     "Hello, world!"
-}
-
-#[get("/reset")]
-fn reset() {
-    let connection = &mut establish_connection();
-    let _ = delete(watcher).execute(connection);
-    let _ = delete(tracker).execute(connection);
-    let _ = delete(monitoring).execute(connection);
-    let _ = delete(position).execute(connection);
-
-    let salt: [u8; 32] = random();
-
-    insert_watcher(Watcher{login: "P1".to_string(), password: "P1@mail.com".to_string(), salt: salt.to_vec()});
-    insert_watcher(Watcher{login: "P2".to_string(), password: "P2@mail.com".to_string(), salt: salt.to_vec()});
-    insert_watcher(Watcher{login: "P3".to_string(), password: "P3@mail.com".to_string(), salt: salt.to_vec()});
-
-    insert_tracker();
-    insert_tracker();
-    insert_tracker();
-
-    let watcher_list = watcher.select(WatcherRes::as_select()).load(connection).expect("Erreur récupération Watcher");
-    let tracker_list = tracker.select(Tracker::as_select()).load(connection).expect("Erreur récupération Tracker");
-
-    insert_monitoring(watcher_list[0].id, tracker_list[0].id, "Papi".to_string());
-    insert_monitoring(watcher_list[1].id, tracker_list[1].id, "Mamie".to_string());
-    insert_monitoring(watcher_list[2].id, tracker_list[2].id, "Bébé".to_string());
-
-    insert_position(45.2, 4.3, tracker_list[0].id);
-    insert_position(43.9, 5.7, tracker_list[1].id);
-    insert_position(44.6, 3.8, tracker_list[2].id);
 }
 
 #[post("/history", data = "<data>")]
@@ -160,9 +120,9 @@ fn deletemonitoring(data: Json<MonitoringRequest>) -> CustomResponse {
     }
 }
 
-#[post("/addtracker")]
-fn addtracker() -> Json<i32> {
-    let new_tracker = insert_tracker();
+#[post("/addtracker", data = "<data>")]
+fn addtracker(data: Json<TrackerInsert>) -> Json<i32> {
+    let new_tracker = insert_tracker(data.latitude, data.longitude);
     Json(new_tracker.id)
 }
 
@@ -195,7 +155,6 @@ async fn setstatus(data: Json<Tracker>) -> CustomResponse {
 fn rocket() -> _ {
     dotenv().ok();
     rocket::build().mount("/", routes![index])
-        .mount("/", routes![reset])
         .mount("/", routes![history])
         .mount("/", routes![signup])
         .mount("/", routes![login])

@@ -21,6 +21,8 @@ diesel::table! {
     tracker (id) {
         id -> Integer,
         status -> Integer,
+        latitude -> Float,
+        longitude -> Float,
     }
 }
 

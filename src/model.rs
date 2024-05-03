@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use serde::Serialize;
 use serde::Deserialize;
 
-use crate::schema::{watcher, tracker, monitoring, position};
+use crate::schema::*;
 
 #[derive(Queryable, Selectable, Insertable, Serialize)]
 #[diesel(table_name = position)]
@@ -25,25 +25,33 @@ pub struct PositionRequest {
 pub struct Tracker {
     pub id: i32,
     pub status: i32,
+    pub latitude: f32,
+    pub longitude: f32,
 }
 
-#[derive(Insertable)]
-#[diesel(table_name = watcher)]
-pub struct Watcher {
-    pub login: String,
-    pub password: String,
-    pub salt: Vec<u8>
+#[derive(Insertable, Deserialize)]
+#[diesel(table_name = tracker)]
+pub struct TrackerInsert {
+    pub latitude: f32,
+    pub longitude: f32,
 }
 
 #[derive(Queryable, Identifiable, Selectable, Serialize)]
 #[diesel(table_name = watcher)]
-pub struct WatcherRes {
+pub struct Watcher {
     pub id: i32,
     pub login: String,
     pub password: String,
     pub salt: Vec<u8>
 }
 
+#[derive(Insertable)]
+#[diesel(table_name = watcher)]
+pub struct WatcherInsert {
+    pub login: String,
+    pub password: String,
+    pub salt: Vec<u8>
+}
 
 #[derive(Queryable, Selectable, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = monitoring)]
