@@ -17,7 +17,7 @@ VALUES (46.7, 3.1),
        (42.6, 5.0);
 
 INSERT INTO monitoring (watcher_id, tracker_id, tracker_name)
-VALUES (1, 1, 'Papi'),
+VALUES (4, 1, 'Papi'),
        (2, 2, 'Mamie'),
        (3, 3, 'Bébé');
 
