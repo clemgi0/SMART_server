@@ -137,7 +137,7 @@ fn is_user_id_admin(id: i32) -> bool {
     return false;
 }
 
-#[post("/history", data = "<data>")]
+#[get("/history", data = "<data>")]
 fn history(data: Json<MonitoringRequest>, jwt: JWT) -> Result<Json<Vec<Position>>, CustomResponse> {
     let user_is_admin = is_user_id_admin(jwt.claims.subject_id);
     if user_is_admin || (jwt.claims.subject_id == data.watcher_id && monitoring_exists(data.watcher_id, data.tracker_id)) {
