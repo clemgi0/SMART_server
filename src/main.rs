@@ -58,21 +58,21 @@ fn decode_jwt(token: String) -> Result<Claims, Error> {
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for JWT {
-    type Error = ();
+    type Error = CustomResponse;
 
-    async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, ()> {
+    async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, CustomResponse> {
         fn is_valid(key: &str) -> Result<Claims, Error> {
             Ok(decode_jwt(String::from(key))?)
         }
 
         match req.headers().get_one("authorization") {
             None => {
-                request::Outcome::Error((Status::BadRequest,()))
+                request::Outcome::Error((Status::BadRequest,CustomResponse::BadRequest))
             },
             Some(key) => match is_valid(key) {
                 Ok(claims) => request::Outcome::Success(JWT {claims}),
                 Err(_err) => {
-                    request::Outcome::Error((Status::BadRequest,()))
+                    request::Outcome::Error((Status::BadRequest,CustomResponse::Unauthorized))
                 }
             },
         }
@@ -123,7 +123,7 @@ fn index() -> &'static str {
     "Hello, world!"
 }
 
-fn _is_user_id_admin(id: i32) -> bool {
+fn is_user_id_admin(id: i32) -> bool {
 
     let connection = &mut establish_connection();
     let watcher_list = watcher.select(Watcher::as_select()).load(connection).expect("Erreur récupération watcher");
@@ -138,8 +138,9 @@ fn _is_user_id_admin(id: i32) -> bool {
 }
 
 #[post("/history", data = "<data>")]
-fn history(data: Json<MonitoringRequest>) -> Result<Json<Vec<Position>>, CustomResponse> {
-    if monitoring_exists(data.watcher_id, data.tracker_id) {
+fn history(data: Json<MonitoringRequest>, jwt: JWT) -> Result<Json<Vec<Position>>, CustomResponse> {
+    let user_is_admin = is_user_id_admin(jwt.claims.subject_id);
+    if user_is_admin || (jwt.claims.subject_id == data.watcher_id && monitoring_exists(data.watcher_id, data.tracker_id)) {
         Ok(Json(get_position(data.tracker_id)))
     } else {
         Err(CustomResponse::Unauthorized)
@@ -157,7 +158,10 @@ fn addposition(data: Json<PositionRequest>) -> CustomResponse {
 }
 
 #[post("/addmonitoring", data = "<data>")]
-fn addmonitoring(data: Json<Monitoring>) -> CustomResponse {
+fn addmonitoring(data: Json<Monitoring>, jwt: JWT) -> CustomResponse {
+    if jwt.claims.subject_id != data.watcher_id {
+        return CustomResponse::Unauthorized;
+    }
     if tracker_exists(data.tracker_id) && !monitoring_exists(data.watcher_id, data.tracker_id) {
         insert_monitoring(data.watcher_id, data.tracker_id, data.tracker_name.clone());
         CustomResponse::OK
@@ -167,7 +171,10 @@ fn addmonitoring(data: Json<Monitoring>) -> CustomResponse {
 }
 
 #[post("/deletemonitoring", data= "<data>")]
-fn deletemonitoring(data: Json<MonitoringRequest>) -> CustomResponse {
+fn deletemonitoring(data: Json<MonitoringRequest>, jwt: JWT) -> CustomResponse {
+    if jwt.claims.subject_id != data.watcher_id {
+        return CustomResponse::Unauthorized;
+    }
     if monitoring_exists(data.watcher_id, data.tracker_id) {
         delete_monitoring(data.watcher_id, data.tracker_id);
         CustomResponse::OK

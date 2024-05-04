@@ -2,10 +2,12 @@ use rocket::{Request, Response};
 use rocket::http::Status;
 use rocket::response::Responder;
 
+#[derive(Debug)]
 pub enum CustomResponse {
     OK,
     Unauthorized,
     Forbidden,
+    BadRequest
 }
 
 impl CustomResponse {
@@ -14,6 +16,7 @@ impl CustomResponse {
             CustomResponse::OK => {Status::Ok}
             CustomResponse::Unauthorized => {Status::Unauthorized}
             CustomResponse::Forbidden => {Status::Forbidden}
+            CustomResponse::BadRequest => {Status::BadRequest}
         }
     }
 }
