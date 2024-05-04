@@ -148,7 +148,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"login\": \"P1\",\n    \"password\": \"password1\"\n}",
+							"raw": "{\n    \"login\": \"jacques\",\n    \"password\": \"chirac\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
