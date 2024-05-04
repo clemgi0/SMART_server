@@ -1,0 +1,253 @@
+{
+	"info": {
+		"_postman_id": "8def4a0f-99e9-426e-913d-44259ab0685a",
+		"name": "Smart_Server",
+		"description": "# ⛓️ Get started here",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "34656442"
+	},
+	"item": [
+		{
+			"name": "Signups",
+			"item": [
+				{
+					"name": "signup_macron",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"login\": \"emmanuel\",\n    \"password\": \"macron\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/signup",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"signup"
+							]
+						},
+						"description": "Register an account with login emmanuel and password macron"
+					},
+					"response": []
+				}
+			],
+			"description": "Creates a new user with the provided login and password only if login doesn't already exist"
+		},
+		{
+			"name": "Logins",
+			"item": [
+				{
+					"name": "login_frederic",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"login\": \"frederic\",\n    \"password\": \"mitterand\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/login",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_valery",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "inherit"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"login\": \"valery\",\n    \"password\": \"giscard\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/login",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_admin",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"login\": \"admin\",\n    \"password\": \"adminPassword\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/login",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"login"
+							]
+						},
+						"description": "The body of this request contains the login information for the admin"
+					},
+					"response": []
+				},
+				{
+					"name": "login_jacques",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"login\": \"P1\",\n    \"password\": \"password1\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/login",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"login"
+							]
+						},
+						"description": "The reset endpoints creates the P1 user and we can login to P1 with the following credentials  \n  \nThe login response either contains a the JWT token later used in requests that require authentication(/reset /history)  \nif the login credentials are valid or an empty string if they are invalid"
+					},
+					"response": []
+				}
+			],
+			"description": "The login endpoint returns a jwt that must then be used in authenticated endpoints such as /history,  \n/addMonitoring, /deleteMonitoring, the jwt must be placed in the authentication bearer header of the request.\n\nIn case the provided login credentials are invalid, the returned jwt is an empty string"
+		},
+		{
+			"name": "History",
+			"item": [
+				{
+					"name": "history_chirac_mamie",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWJqZWN0X2lkIjoyLCJleHAiOjE3MTQ4MjgxNDZ9.XzgDp00LMhmJQTgVdn-StSTPrL9v4mbGgHq-7Wz3fRPRNaTZ2gyYG_2gKarS3iq9YAqtqfevwJ24fwVIYqbJqA",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"watcher_id\": 2,\n    \"tracker_id\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/history",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"history"
+							]
+						},
+						"description": "The body of this request contains the information to get the history for the tracker #2 using the watcher #2 (chirac)\n\nFor this request to work you must either be logged in as admin or as chirac"
+					},
+					"response": []
+				}
+			],
+			"description": "Retrieve the position history of asome wacther's tracker, the request must be authenticated with the jwt of the requesting watcher or with the admin's jwt"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "token",
+			"value": ""
+		},
+		{
+			"key": "baseUrl",
+			"value": "https://postman-integration-testing.glitch.me/"
+		}
+	]
+}
