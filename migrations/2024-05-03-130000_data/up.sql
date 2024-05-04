@@ -2,9 +2,14 @@
 
 
 INSERT INTO watcher (login, password, salt)
-VALUES ('jacques', 'chirac', 'salt_value'),
-       ('valery', 'giscard', 'salt_value'),
-       ('frederic', 'mitterand', 'salt_value');
+-- admin adminPassword
+-- jacques chirac
+-- valery giscard
+-- frederic mitterand
+VALUES ('admin', '$argon2id$v=19$m=19456,t=2,p=1$c2FsdF92YWx1ZQ$7TBumjJiIKYJnl53BFdFBRh15XL4SSnr5NxMscJDsE8', 'salt_value'),
+       ('jacques', '$argon2id$v=19$m=19456,t=2,p=1$c2FsdF92YWx1ZQ$FnKEb0tRczVm1fNkwRRgOMQi9XWsFPwHBKL8ctnFrlQ', 'salt_value'),
+       ('valery', '$argon2id$v=19$m=19456,t=2,p=1$c2FsdF92YWx1ZQ$zCAyibf1UBU8ivwhJthaR3QuVZEkSipmfK7dwhI/a3k', 'salt_value'),
+       ('frederic', '$argon2id$v=19$m=19456,t=2,p=1$c2FsdF92YWx1ZQ$bIyWigTg4tClXp7AW6jNioanQjrUVdxHdtxkQYUfr44', 'salt_value');
 
 INSERT INTO tracker (latitude, longitude)
 VALUES (46.7, 3.1),

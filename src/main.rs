@@ -7,14 +7,20 @@ mod mail;
 #[macro_use] extern crate rocket;
 
 use std::env;
-use chrono::Utc;
-use rand::random;
 use dotenvy::dotenv;
-use rocket::serde::json::Json;
+use rocket::request::{self, FromRequest};
+
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
-use jsonwebtoken::{encode, EncodingKey, Algorithm, Header};
-use jsonwebtoken::errors::Error;
+use rocket::Request;
+use rocket::http::Status;
+use crate::db::establish_connection;
+use model::{LoginRequest, LoginResponse, SignupRequest, SignupResponse, JWT};
+use rocket::serde::json::Json;
 use argon2::Config;
+use rand::random;
+use chrono::Utc;
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::errors::Error;
 
 use crate::db::*;
 use crate::model::*;
@@ -25,8 +31,7 @@ use crate::responder::CustomResponse;
 pub fn create_jwt(id: i32) -> Result<String, Error> {
     let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
 
-    let expiration = Utc::now().checked_add_signed(chrono::Duration::seconds(60)).expect("Invalid timestamp").timestamp();
-
+    let expiration = Utc::now().checked_add_signed(chrono::Duration::minutes(5)).expect("Invalid timestamp").timestamp();
     let claims = Claims {
         subject_id: id,
         exp: expiration as usize
@@ -35,6 +40,43 @@ pub fn create_jwt(id: i32) -> Result<String, Error> {
     let header = Header::new(Algorithm::HS512);
 
     encode(&header, &claims, &EncodingKey::from_secret(secret.as_bytes()))
+}
+
+fn decode_jwt(token: String) -> Result<Claims, Error> {
+    let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
+    let token = token.trim_start_matches("Bearer").trim();
+
+    match decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret(secret.as_bytes()),
+        &Validation::new(Algorithm::HS512),
+    ) {
+        Ok(token) => Ok(token.claims),
+        Err(err) => Err(err)
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for JWT {
+    type Error = ();
+
+    async fn from_request(req: &'r Request<'_>) -> request::Outcome<Self, ()> {
+        fn is_valid(key: &str) -> Result<Claims, Error> {
+            Ok(decode_jwt(String::from(key))?)
+        }
+
+        match req.headers().get_one("authorization") {
+            None => {
+                request::Outcome::Error((Status::BadRequest,()))
+            },
+            Some(key) => match is_valid(key) {
+                Ok(claims) => request::Outcome::Success(JWT {claims}),
+                Err(_err) => {
+                    request::Outcome::Error((Status::BadRequest,()))
+                }
+            },
+        }
+    }
 }
 
 #[post("/signup", data = "<signup_request>")]
@@ -79,6 +121,20 @@ fn login(login_request: Json<LoginRequest>) -> Json<LoginResponse> {
 #[get("/")]
 fn index() -> &'static str {
     "Hello, world!"
+}
+
+fn _is_user_id_admin(id: i32) -> bool {
+
+    let connection = &mut establish_connection();
+    let watcher_list = watcher.select(Watcher::as_select()).load(connection).expect("Erreur récupération watcher");
+    for watcher1 in watcher_list {
+        if watcher1.id == id {
+            if watcher1.login == "admin" {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 #[post("/history", data = "<data>")]
