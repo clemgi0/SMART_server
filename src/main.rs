@@ -11,8 +11,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use dotenvy::dotenv;
 use rocket::request::{self, FromRequest};
 
+use rocket::fairing::{Fairing, Info, Kind};
+use rocket::http::{ContentType, Header as httpHeader, Method};
+
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
-use rocket::Request;
+use rocket::{Request, Response};
 use rocket::http::Status;
 use crate::db::establish_connection;
 use model::{LoginRequest, LoginResponse, SignupRequest, SignupResponse, JWT};
@@ -226,11 +229,36 @@ async fn setstatus(data: Json<Tracker>) -> CustomResponse {
     }
 }
 
+pub struct CORS;
+
+#[rocket::async_trait]
+impl Fairing for CORS {
+    fn info(&self) -> Info {
+        Info {
+            name: "Add CORS headers to responses",
+            kind: Kind::Response
+        }
+    }
+
+    async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
+        response.set_header(httpHeader::new("Access-Control-Allow-Origin", "*"));
+        response.set_header(httpHeader::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS"));
+        response.set_header(httpHeader::new("Access-Control-Allow-Headers", "*"));
+        response.set_header(httpHeader::new("Access-Control-Allow-Credentials", "true"));
+        if _request.method() == Method::Options {
+            let body = "";
+            response.set_header(ContentType::Plain);
+            response.set_sized_body(body.len(), std::io::Cursor::new(body));
+            response.set_status(Status::Ok);
+        }
+    }
+}
+
 
 #[launch]
 fn rocket() -> _ {
     dotenv().ok();
-    rocket::build().mount("/", routes![index])
+    rocket::build().attach(CORS).mount("/", routes![index])
         .mount("/", routes![history])
         .mount("/", routes![signup])
         .mount("/", routes![login])
