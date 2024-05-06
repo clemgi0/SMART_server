@@ -78,6 +78,7 @@ pub struct SignupRequest {
 
 #[derive(Serialize)]
 pub struct SignupResponse {
+    pub user_id: i32,
     pub success: bool,
 }
 
@@ -90,6 +91,7 @@ pub struct LoginRequest {
 
 #[derive(Serialize)]
 pub struct LoginResponse {
+    pub user_id: i32,
     pub access_token: String,
 }
 
