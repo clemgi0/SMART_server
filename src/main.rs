@@ -95,7 +95,7 @@ fn signup(signup_request: Json<SignupRequest>) -> Json<SignupResponse> {
 
 }
 
-#[get("/login", data = "<login_request>")]
+#[post("/login", data = "<login_request>")]
 fn login(login_request: Json<LoginRequest>) -> Json<LoginResponse> {
 
     let connection = &mut establish_connection();
@@ -196,6 +196,11 @@ fn addtracker(data: Json<TrackerInsert>) -> Json<i32> {
     Json(new_tracker.id)
 }
 
+#[get("/getalerttrackers")]
+fn getalerttrackers(jwt: JWT) -> Json<Vec<Tracker>> {
+    Json(get_alert_trackers(jwt.claims.subject_id))
+}
+
 #[post("/setstatus", data = "<data>")]
 async fn setstatus(data: Json<Tracker>) -> CustomResponse {
     if tracker_exists(data.id) {
@@ -233,4 +238,5 @@ fn rocket() -> _ {
         .mount("/", routes![deletemonitoring])
         .mount("/", routes![addtracker])
         .mount("/", routes![setstatus])
+        .mount("/", routes![getalerttrackers])
 }

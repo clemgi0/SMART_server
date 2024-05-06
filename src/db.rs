@@ -105,6 +105,16 @@ pub fn tracker_exists(id_tracker: i32) -> bool {
         .gt(&0)
 }
 
+pub fn get_alert_trackers(id_watcher: i32) -> Vec<Tracker>{
+    let connection = &mut establish_connection();
+    tracker
+        .inner_join(monitoring)
+        .filter(mw_id.eq(id_watcher))
+        .select(Tracker::as_select())
+        .load(connection)
+        .expect("Erreur récupération Trackers")
+}
+
 pub fn delete_monitoring(id_watcher: i32, id_tracker: i32) {
     let connection = &mut establish_connection();
     let _ = delete(monitoring
