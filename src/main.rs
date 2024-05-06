@@ -200,9 +200,9 @@ fn addtracker(data: Json<TrackerInsert>) -> Json<i32> {
     Json(new_tracker.id)
 }
 
-#[get("/getalerttrackers")]
-fn getalerttrackers(jwt: JWT) -> Json<Vec<Tracker>> {
-    Json(get_alert_trackers(jwt.claims.subject_id))
+#[get("/gettrackers")]
+fn gettrackers(jwt: JWT) -> Json<Vec<Tracker>> {
+    Json(get_trackers(jwt.claims.subject_id))
 }
 
 #[post("/setstatus", data = "<data>")]
@@ -267,5 +267,5 @@ fn rocket() -> _ {
         .mount("/", routes![deletemonitoring])
         .mount("/", routes![addtracker])
         .mount("/", routes![setstatus])
-        .mount("/", routes![getalerttrackers])
+        .mount("/", routes![gettrackers])
 }
