@@ -83,7 +83,7 @@ impl<'r> FromRequest<'r> for JWT {
 #[post("/signup", data = "<signup_request>")]
 fn signup(signup_request: Json<SignupRequest>) -> Json<SignupResponse> {
     if watcher_exists(signup_request.login.clone()) {
-        return Json(SignupResponse {success: false});
+        return Json(SignupResponse {user_id:0, success: false});
     }
 
     let salt: [u8; 32] = random();
@@ -91,7 +91,11 @@ fn signup(signup_request: Json<SignupRequest>) -> Json<SignupResponse> {
     let hashed_password = argon2::hash_encoded(signup_request.password.as_bytes(), &salt, &config);
 
     insert_watcher(WatcherInsert {login: signup_request.login.clone(), password: hashed_password.expect("Erreur hashage password"), salt: salt.to_vec()});
-    Json(SignupResponse {success: true })
+
+    let connection = &mut establish_connection();
+    let results = watcher.select(Watcher::as_select()).load(connection).expect("Erreur select watcher");
+    let watcher1_opt = results.iter().find(|watcher1| watcher1.login == signup_request.login.clone()).expect("User not found");
+    Json(SignupResponse {user_id: watcher1_opt.id, success: true })
 
 }
 
@@ -108,13 +112,13 @@ fn login(login_request: Json<LoginRequest>) -> Json<LoginResponse> {
             let hashed_password = argon2::hash_encoded(login_request.password.as_bytes(), &salt, &config).expect("Couldn't hash login password");
             if hashed_password == watcher1.password {
                 let jwt = create_jwt(watcher1.id).expect("Couldn't create jwt token");
-                Json(LoginResponse{access_token: jwt })
+                Json(LoginResponse{user_id:watcher1.id, access_token: jwt })
             } else {
-                Json(LoginResponse{access_token: "".to_string() })
+                Json(LoginResponse{user_id:0, access_token: "".to_string() })
             }
         },
         None => {
-            Json(LoginResponse{access_token: "".to_string() })
+            Json(LoginResponse{user_id: 0, access_token: "".to_string() })
         }
     }
 }
