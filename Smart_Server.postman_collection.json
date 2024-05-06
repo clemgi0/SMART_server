@@ -1,10 +1,10 @@
 {
 	"info": {
-		"_postman_id": "8def4a0f-99e9-426e-913d-44259ab0685a",
+		"_postman_id": "cbf64d47-146c-488c-ad49-f5ca388b7452",
 		"name": "Smart_Server",
 		"description": "# ⛓️ Get started here",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "34656442"
+		"_exporter_id": "33643039"
 	},
 	"item": [
 		{
@@ -46,11 +46,8 @@
 			"item": [
 				{
 					"name": "login_frederic",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
@@ -76,14 +73,11 @@
 				},
 				{
 					"name": "login_valery",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
 						"auth": {
 							"type": "inherit"
 						},
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
@@ -109,11 +103,8 @@
 				},
 				{
 					"name": "login_admin",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
@@ -140,11 +131,8 @@
 				},
 				{
 					"name": "login_jacques",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
@@ -177,9 +165,6 @@
 			"item": [
 				{
 					"name": "history_chirac_mamie",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -191,11 +176,11 @@
 								}
 							]
 						},
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"watcher_id\": 2,\n    \"tracker_id\": 2\n}",
+							"raw": "{\n    \"tracker_id\": 2\n}",
 							"options": {
 								"raw": {
 									"language": "text"
@@ -218,6 +203,66 @@
 				}
 			],
 			"description": "Retrieve the position history of asome wacther's tracker, the request must be authenticated with the jwt of the requesting watcher or with the admin's jwt"
+		},
+		{
+			"name": "Tracker",
+			"item": [
+				{
+					"name": "get_trackers",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWJqZWN0X2lkIjo0LCJleHAiOjE3MTUwMDMxNDd9.lsuUqoMhYmMZIMh1tMjcCFzJGfje5L0Qgjn62cPGfX6_9oqkXYaulHxMD-w2cxCc_3ywZTuqtqoSrfuiBFOyLA",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8000/gettrackers",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"gettrackers"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "new_tracker",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"longitude\": 5,\r\n    \"latitude\": 5\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8000/addtracker",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"addtracker"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [
