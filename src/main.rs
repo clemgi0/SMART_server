@@ -7,6 +7,7 @@ mod mail;
 #[macro_use] extern crate rocket;
 
 use std::env;
+use std::time::{SystemTime, UNIX_EPOCH};
 use dotenvy::dotenv;
 use rocket::request::{self, FromRequest};
 
@@ -141,7 +142,13 @@ fn is_user_id_admin(id: i32) -> bool {
 fn history(data: Json<MonitoringRequest>, jwt: JWT) -> Result<Json<Vec<Position>>, CustomResponse> {
     let user_is_admin = is_user_id_admin(jwt.claims.subject_id);
     if user_is_admin || (jwt.claims.subject_id == data.watcher_id && monitoring_exists(data.watcher_id, data.tracker_id)) {
-        Ok(Json(get_position(data.tracker_id)))
+        let positions = get_position(data.tracker_id);
+        let last_positions = positions
+            .iter()
+            .map(|pos| pos.clone())
+            .filter(|pos| (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() - pos.timestamp as u64) < 3600)
+            .collect();
+        Ok(Json(last_positions))
     } else {
         Err(CustomResponse::Unauthorized)
     }

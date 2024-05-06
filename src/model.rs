@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::schema::*;
 
-#[derive(Queryable, Selectable, Insertable, Serialize)]
+#[derive(Queryable, Selectable, Insertable, Serialize, Clone)]
 #[diesel(table_name = position)]
 pub struct Position {
     pub latitude: f32,
