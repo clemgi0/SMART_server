@@ -163,7 +163,7 @@ fn history(data: Json<MonitoringRequest>, jwt: JWT) -> Result<Json<Vec<Position>
 
 #[post("/addposition", data = "<data>")]
 fn addposition(data: Json<PositionRequest>) -> CustomResponse {
-    if tracker_exists(data.tracker_id) && data.latitude.abs() <= 90.0 && data.longitude.abs() <= 90.0{
+    if tracker_exists(data.tracker_id) && data.latitude.abs() <= 90.0 && data.longitude.abs() <= 180.0{
         insert_position(data.latitude, data.longitude, data.tracker_id);
         CustomResponse::OK
     } else {
