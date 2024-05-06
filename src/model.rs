@@ -65,7 +65,6 @@ pub struct Monitoring {
 
 #[derive(Deserialize)]
 pub struct MonitoringRequest {
-    pub watcher_id: i32,
     pub tracker_id: i32,
 }
 

@@ -109,7 +109,7 @@ pub fn get_alert_trackers(id_watcher: i32) -> Vec<Tracker>{
     let connection = &mut establish_connection();
     tracker
         .inner_join(monitoring)
-        .filter(mw_id.eq(id_watcher))
+        .filter(mw_id.eq(id_watcher).and(status.eq(1)))
         .select(Tracker::as_select())
         .load(connection)
         .expect("Erreur récupération Trackers")

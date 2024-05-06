@@ -142,15 +142,15 @@ fn is_user_id_admin(id: i32) -> bool {
     return false;
 }
 
-#[get("/history", data = "<data>")]
+#[post("/history", data = "<data>")]
 fn history(data: Json<MonitoringRequest>, jwt: JWT) -> Result<Json<Vec<Position>>, CustomResponse> {
     let user_is_admin = is_user_id_admin(jwt.claims.subject_id);
-    if user_is_admin || (jwt.claims.subject_id == data.watcher_id && monitoring_exists(data.watcher_id, data.tracker_id)) {
+    if user_is_admin || monitoring_exists(jwt.claims.subject_id, data.tracker_id) {
         let positions = get_position(data.tracker_id);
         let last_positions = positions
             .iter()
             .map(|pos| pos.clone())
-            .filter(|pos| (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() - pos.timestamp as u64) < 3600)
+            .filter(|pos| (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64 - pos.timestamp) < 3600)
             .collect();
         Ok(Json(last_positions))
     } else {
@@ -183,11 +183,8 @@ fn addmonitoring(data: Json<Monitoring>, jwt: JWT) -> CustomResponse {
 
 #[post("/deletemonitoring", data= "<data>")]
 fn deletemonitoring(data: Json<MonitoringRequest>, jwt: JWT) -> CustomResponse {
-    if jwt.claims.subject_id != data.watcher_id {
-        return CustomResponse::Unauthorized;
-    }
-    if monitoring_exists(data.watcher_id, data.tracker_id) {
-        delete_monitoring(data.watcher_id, data.tracker_id);
+    if monitoring_exists(jwt.claims.subject_id, data.tracker_id) {
+        delete_monitoring(jwt.claims.subject_id, data.tracker_id);
         CustomResponse::OK
     } else {
         CustomResponse::Unauthorized
