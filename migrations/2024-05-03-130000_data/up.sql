@@ -22,6 +22,7 @@ VALUES (4, 1, 'Papi'),
        (3, 3, 'Bébé');
 
 INSERT INTO position (latitude, longitude, tracker_id, timestamp)
-VALUES (45.2, 4.3, 1, CURRENT_TIMESTAMP),
-       (43.9, 5.7, 2, CURRENT_TIMESTAMP),
-       (44.6, 3.8, 3, CURRENT_TIMESTAMP);
+VALUES (45.2, 4.3, 1, strftime('%s', 'now')),
+       (43.9, 5.7, 2, strftime('%s', 'now')),
+       (43.8, 5.6, 2, strftime('%s', 'now') + 2),
+       (44.6, 3.8, 3, strftime('%s', 'now'));
