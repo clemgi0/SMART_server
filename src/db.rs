@@ -105,13 +105,13 @@ pub fn tracker_exists(id_tracker: i32) -> bool {
         .gt(&0)
 }
 
-pub fn get_trackers(id_watcher: i32) -> Vec<Tracker>{
+pub fn get_trackers(id_watcher: i32) -> Vec<(Tracker, Monitoring)>{
     let connection = &mut establish_connection();
     tracker
         .inner_join(monitoring)
         .filter(mw_id.eq(id_watcher))
-        .select(Tracker::as_select())
-        .load(connection)
+        .select((Tracker::as_select(), Monitoring::as_select()))
+        .load::<(Tracker, Monitoring)>(connection)
         .expect("Erreur récupération Trackers")
 }
 

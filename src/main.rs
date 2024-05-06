@@ -201,7 +201,7 @@ fn addtracker(data: Json<TrackerInsert>) -> Json<i32> {
 }
 
 #[get("/gettrackers")]
-fn gettrackers(jwt: JWT) -> Json<Vec<Tracker>> {
+fn gettrackers(jwt: JWT) -> Json<Vec<(Tracker, Monitoring)>> {
     Json(get_trackers(jwt.claims.subject_id))
 }
 
