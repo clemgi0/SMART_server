@@ -12,7 +12,7 @@ use dotenvy::dotenv;
 use rocket::request::{self, FromRequest};
 
 use rocket::fairing::{Fairing, Info, Kind};
-use rocket::http::Header as httpHeader;
+use rocket::http::{ContentType, Header as httpHeader, Method};
 
 use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
 use rocket::{Request, Response};
@@ -248,6 +248,12 @@ impl Fairing for CORS {
         response.set_header(httpHeader::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS"));
         response.set_header(httpHeader::new("Access-Control-Allow-Headers", "*"));
         response.set_header(httpHeader::new("Access-Control-Allow-Credentials", "true"));
+        if _request.method() == Method::Options {
+            let body = "";
+            response.set_header(ContentType::Plain);
+            response.set_sized_body(body.len(), std::io::Cursor::new(body));
+            response.set_status(Status::Ok);
+        }
     }
 }
 
