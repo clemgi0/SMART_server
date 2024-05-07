@@ -1,5 +1,11 @@
 # SMART_server
 
+Rust server for the Tracks Application.
+
+Liens :
+- [Repo de l'application mobile](https://github.com/clemgi0/SMART_tracker)
+- [Repo de l'application web](https://github.com/clemgi0/SMART_front)
+
 ## Get the server up and running
 
 Make sure of the following
